@@ -1,0 +1,36 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # 每天凌晨2点运行
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout forked repository
+      uses: actions/checkout@v3
+
+    - name: Setup Git
+      run: |
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+
+    - name: Add upstream repository
+      run: git remote add upstream https://github.com/hd9211/Tvbox1.git
+
+    - name: Fetch upstream changes
+      run: git fetch upstream
+
+    - name: Merge upstream changes into fork
+      run: |
+        git checkout main
+        git merge upstream/main --allow-unrelated-histories || true # 合并冲突时继续运行
+        git reset --hard HEAD # 强制应用合并结果
+
+    - name: Push changes to forked repository
+      run: git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
